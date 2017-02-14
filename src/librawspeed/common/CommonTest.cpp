@@ -240,8 +240,13 @@ TEST(UnrollLoopTest, Test) {
   });
 }
 
-TEST(GetThreadCountTest, Test) {
-  ASSERT_NO_THROW({ ASSERT_GE(getThreadCount(), 1); });
+TEST(ThreadCountTest, ThreadCountTest) {
+  ASSERT_GT(getThreadCount(), 0);
+  setThreadCount(1); ASSERT_EQ(getThreadCount(), 1);
+#ifndef NO_PTHREAD
+  setThreadCount(2); ASSERT_EQ(getThreadCount(), 2);
+#endif
+  setThreadCount(0); ASSERT_GT(getThreadCount(), 0);
 }
 
 TEST(MakeUniqueTest, Test) {
