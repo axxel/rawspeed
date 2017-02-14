@@ -28,6 +28,7 @@
 #include "metadata/BlackArea.h"        // for BlackArea
 #include "metadata/ColorFilterArray.h" // for ColorFilterArray
 #include <string>                      // for string
+#include <memory>                      // for shared_ptr
 #include <vector>                      // for vector
 
 namespace RawSpeed {
@@ -174,7 +175,6 @@ protected:
   virtual void fixBadPixel( uint32 x, uint32 y, int component = 0) = 0;
   void fixBadPixelsThread(int start_y, int end_y);
   void startWorker(RawImageWorker::RawImageWorkerTask task, bool cropped );
-  uint32 dataRefCount = 0;
   uchar8* data = nullptr;
   uint32 cpp = 1; // Components per pixel
   uint32 bpp = 0; // Bytes per pixel.
@@ -182,9 +182,6 @@ protected:
   iPoint2D mOffset;
   iPoint2D uncropped_dim;
   TableLookUp* table = nullptr;
-#ifdef HAVE_PTHREAD
-  pthread_mutex_t mymutex;
-#endif
 };
 
 class RawImageDataU16 final : public RawImageData {
@@ -218,23 +215,14 @@ protected:
   friend class RawImage;
 };
 
- class RawImage {
+ class RawImage : public std::shared_ptr<RawImageData> {
  public:
    static RawImage create(RawImageType type = TYPE_USHORT16);
    static RawImage create(const iPoint2D &dim,
                           RawImageType type = TYPE_USHORT16,
                           uint32 componentsPerPixel = 1);
-   RawImageData* operator->() const { return p_; }
-   RawImageData& operator*() const { return *p_; }
-   RawImage(RawImageData* p);  // p must not be NULL
-  ~RawImage();
-   RawImage(const RawImage& p);
-   RawImage& operator=(const RawImage& p) noexcept;
-   RawImage& operator=(RawImage&& p) noexcept;
 
-   RawImageData* get() { return p_; }
- private:
-   RawImageData* p_;    // p_ is never NULL
+   RawImage(RawImageData* p) : std::shared_ptr<RawImageData>(p) {}
  };
 
 inline RawImage RawImage::create(RawImageType type)  {
