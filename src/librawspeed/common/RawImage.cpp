@@ -37,8 +37,6 @@ namespace RawSpeed {
 
 RawImageData::RawImageData() : cfa(iPoint2D(0, 0)) {
   fill_n(blackLevelSeparate, 4, -1);
-  pthread_mutex_init(&errMutex, nullptr);
-  pthread_mutex_init(&mBadPixelMutex, nullptr);
 }
 
 RawImageData::RawImageData(const iPoint2D& _dim, uint32 _bpc, uint32 _cpp)
@@ -46,8 +44,6 @@ RawImageData::RawImageData(const iPoint2D& _dim, uint32 _bpc, uint32 _cpp)
       bpp(_bpc * _cpp) {
   fill_n(blackLevelSeparate, 4, -1);
   createData();
-  pthread_mutex_init(&errMutex, nullptr);
-  pthread_mutex_init(&mBadPixelMutex, nullptr);
 }
 
 ImageMetaData::ImageMetaData() {
@@ -60,12 +56,9 @@ ImageMetaData::ImageMetaData() {
 
 RawImageData::~RawImageData() {
   mOffset = iPoint2D(0, 0);
-  pthread_mutex_destroy(&errMutex);
-  pthread_mutex_destroy(&mBadPixelMutex);
   if (table != nullptr) {
     delete table;
   }
-  errors.clear();
   destroyData();
 }
 
@@ -162,12 +155,6 @@ void RawImageData::subFrame(iRectangle2D crop) {
 
   mOffset += crop.pos;
   dim = crop.dim;
-}
-
-void RawImageData::setError(const string& err) {
-  pthread_mutex_lock(&errMutex);
-  errors.push_back(err);
-  pthread_mutex_unlock(&errMutex);
 }
 
 void RawImageData::createBadPixelMap()

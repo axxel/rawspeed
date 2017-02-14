@@ -112,8 +112,8 @@ public:
   }
 
   void apply(RawImage& ri) override {
-    ri->mBadPixelPositions.insert(ri->mBadPixelPositions.begin(),
-                                  badPixels.begin(), badPixels.end());
+    if (!badPixels.empty())
+      ri->mBadPixelPositions.append(badPixels);
   }
 };
 
