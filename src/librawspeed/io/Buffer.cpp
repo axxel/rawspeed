@@ -41,12 +41,26 @@ Buffer::~Buffer() {
   }
 }
 
-Buffer& Buffer::operator=(const Buffer &rhs)
+Buffer& Buffer::operator=(const Buffer& rhs)
 {
-  this->~Buffer();
-  data = rhs.data;
-  size = rhs.size;
-  isOwner = false;
+  if (&rhs != this) {
+    this->~Buffer();
+    data = rhs.data;
+    size = rhs.size;
+    isOwner = false;
+  }
+  return *this;
+}
+
+Buffer& Buffer::operator=(Buffer&& rhs)
+{
+  if (&rhs != this) {
+    this->~Buffer();
+    data = rhs.data;
+    size = rhs.size;
+    isOwner = rhs.isOwner;
+    rhs.isOwner = false;
+  }
   return *this;
 }
 

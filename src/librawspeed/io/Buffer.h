@@ -66,6 +66,7 @@ public:
   // Frees memory if owned
   ~Buffer();
   Buffer& operator=(const Buffer& rhs);
+  Buffer& operator=(Buffer&& rhs);
 
   Buffer getSubView(size_type offset, size_type size_) const {
     return Buffer(getData(offset, size_), size_);
@@ -135,8 +136,10 @@ class DataBuffer : public Buffer
   bool inNativeByteOrder = true;
 public:
   DataBuffer() = default;
-  DataBuffer(const Buffer &data_, bool inNativeByteOrder_ = true)
+  DataBuffer(const Buffer& data_, bool inNativeByteOrder_ = true)
       : Buffer(data_), inNativeByteOrder(inNativeByteOrder_) {}
+  DataBuffer(Buffer&& data_, bool inNativeByteOrder_ = true)
+      : Buffer(std::move(data_)), inNativeByteOrder(inNativeByteOrder_) {}
 
   // get memory of type T from byte offset 'offset + sizeof(T)*index' and swap byte order if required
   template<typename T> inline T get(size_type offset, size_type index = 0) const {
