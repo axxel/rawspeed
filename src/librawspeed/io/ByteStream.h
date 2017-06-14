@@ -38,8 +38,8 @@ protected:
 
 public:
   ByteStream() = default;
-  ByteStream(const DataBuffer& buffer)
-    : DataBuffer(buffer) {}
+  ByteStream(const DataBuffer& buffer) : DataBuffer(buffer) {}
+  ByteStream(DataBuffer&& buffer) : DataBuffer(std::move(buffer)) {}
   ByteStream(const Buffer &buffer, size_type offset, size_type size_,
              bool inNativeByteOrder_ = true)
       : DataBuffer(buffer.getSubView(0, offset + size_), inNativeByteOrder_),
