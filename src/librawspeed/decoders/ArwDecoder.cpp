@@ -94,20 +94,17 @@ RawImage ArwDecoder::decodeRawInternal() {
       uint32 offset = (*keyData) * 4;
       keyData = mFile->getData(key_off + offset, 4);
       uint32 key = getU32BE(keyData);
-      uchar8 *head = mFile->getDataWrt(head_off, 40);
-      SonyDecrypt((uint32 *) head, 10, key);
-      for (int i=26; i-- > 22; )
-        key = key << 8 | head[i];
+      ByteStream decryptedData = SonyDecrypt(ByteStream(*mFile, head_off, 40u), key);
+      key = getU32LE(decryptedData.getData(40) + 22);
 
       // "Decrypt" the whole image buffer in place
-      uchar8 *image_data = mFile->getDataWrt(off, len);
-      SonyDecrypt((uint32 *) image_data, len/4, key);
+      decryptedData = SonyDecrypt(ByteStream(*mFile, off, len), key);
 
       // And now decode as a normal 16bit raw
       mRaw->dim = iPoint2D(width, height);
       mRaw->createData();
 
-      UncompressedDecompressor u(*mFile, off, len, mRaw, uncorrectedRawValues);
+      UncompressedDecompressor u(decryptedData, mRaw, uncorrectedRawValues);
       u.decode16BitRawBEunpacked(width, height);
 
       return mRaw;
@@ -263,7 +260,7 @@ void ArwDecoder::DecodeARW(ByteStream &input, uint32 w, uint32 h) {
 void ArwDecoder::DecodeARW2(ByteStream &input, uint32 w, uint32 h, uint32 bpp) {
 
   if (bpp == 8) {
-    in = input;
+    bs = input;
     this->startThreads();
     return;
   } // End bpp = 8
@@ -346,10 +343,7 @@ void ArwDecoder::decodeMetaDataInternal(const CameraMetaData* meta) {
   }
 }
 
-void ArwDecoder::SonyDecrypt(uint32 *buffer, uint32 len, uint32 key) {
-  if (0 == len)
-    return;
-
+ByteStream ArwDecoder::SonyDecrypt(ByteStream encrypted, uint32 key) {
   uint32 pad[128];
 
   // Initialize the decryption pad from the key
@@ -361,47 +355,43 @@ void ArwDecoder::SonyDecrypt(uint32 *buffer, uint32 len, uint32 key) {
   for (int p=0; p < 127; p++)
     pad[p] = getU32BE(&pad[p]);
 
+  Buffer res(encrypted.getRemainSize());
+  auto* in = (uint32*)encrypted.peekData(res.getSize());
+  auto* out = (uint32*)res.getDataWrt(0, res.getSize());
+
   int p = 127;
   // Decrypt the buffer in place using the pad
-  for (; len > 0; len--) {
+  for (auto i = 0u; i < res.getSize(); i += sizeof(uint32)) {
     pad[p & 127] = pad[(p+1) & 127] ^ pad[(p+1+64) & 127];
-
-    uint32 pv;
-    memcpy(&pv, pad + (p & 127), sizeof(uint32));
-
-    uint32 bv;
-    memcpy(&bv, buffer, sizeof(uint32));
-
-    bv ^= pv;
-
-    memcpy(buffer, &bv, sizeof(uint32));
-
-    buffer++;
-    p++;
+    memcpy(out, in, sizeof(uint32));
+    *out ^= pad[p & 127];
+    ++out;
+    ++in;
+    ++p;
   }
+  ByteStream decrypted(move(res));
+  decrypted.setInNativeByteOrder(encrypted.isInNativeByteOrder());
+  decrypted.rebase(encrypted.getPosition());
+  return decrypted;
 }
 
 void ArwDecoder::GetWB() {
   // Set the whitebalance for all the modern ARW formats (everything after A100)
-  if (mRootIFD->hasEntryRecursive(DNGPRIVATEDATA)) {
-    TiffEntry *priv = mRootIFD->getEntryRecursive(DNGPRIVATEDATA);
-    TiffRootIFD makerNoteIFD(priv->getRootIfdData(), priv->getU32());
+  // Look for an entry with tag DNGPRIVATEDATA, which actually is no DNG
+  // private data (if it were, then it would have been sucessfully parsed
+  // as sub IFD in TiffIFD). exiftool calls that entry "SR2Private".
+  TiffEntry* priv = mRootIFD->getEntryRecursive(DNGPRIVATEDATA);
+  if (priv) {
+    // The priv tag only contains an offset value pointing to a real IFD
+    TiffRootIFD subIFD(priv->getRootIfdData(), priv->getU32());
 
-    TiffEntry *sony_offset = makerNoteIFD.getEntryRecursive(SONY_OFFSET);
-    TiffEntry *sony_length = makerNoteIFD.getEntryRecursive(SONY_LENGTH);
-    TiffEntry *sony_key = makerNoteIFD.getEntryRecursive(SONY_KEY);
-    if(!sony_offset || !sony_length || !sony_key || sony_key->count != 4)
-      ThrowRDE("couldn't find the correct metadata for WB decoding");
+    uint32 off = subIFD.getEntry(SONY_OFFSET)->getU32();
+    uint32 len = subIFD.getEntry(SONY_LENGTH)->getU32();
+    uint32 key = getU32LE(subIFD.getEntry(SONY_KEY)->getData(4));
 
-    uint32 off = sony_offset->getU32();
-    uint32 len = sony_length->getU32();
-    uint32 key = getU32LE(sony_key->getData(4));
+    ByteStream decryptedData = SonyDecrypt(ByteStream(*mFile, off, len), key);
 
-    //TODO: replace ugly inplace decryption of (const) raw data
-    auto *ifp_data = (uint32 *)mFile->getDataWrt(off, len);
-    SonyDecrypt(ifp_data, len/4, key);
-
-    TiffRootIFD encryptedIFD(priv->getRootIfdData(), off);
+    TiffRootIFD encryptedIFD(decryptedData);
 
     if (encryptedIFD.hasEntry(SONYGRBGLEVELS)){
       TiffEntry *wb = encryptedIFD.getEntry(SONYGRBGLEVELS);
@@ -428,7 +418,7 @@ void ArwDecoder::decodeThreaded(RawDecoderThread * t) {
   uint32 pitch = mRaw->pitch;
   int32 w = mRaw->dim.x;
 
-  BitPumpPlain bits(in);
+  BitPumpPlain bits(bs);
   for (uint32 y = t->start_y; y < t->end_y; y++) {
     auto *dest = (ushort16 *)&data[y * pitch];
     // Realign
