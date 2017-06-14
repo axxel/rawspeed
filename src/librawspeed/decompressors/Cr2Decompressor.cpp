@@ -98,9 +98,6 @@ void Cr2Decompressor::decodeN_X_Y()
     // see: FIX_CANON_HALF_HEIGHT_DOUBLE_WIDTH
     frame.h *= 2;
   }
-  // Fix for Canon 6D mRaw, which has flipped width & height
-  // see FIX_CANON_FLIPPED_WIDTH_AND_HEIGHT
-  uint32 sliceHeight = frame.cps == 3 ? min(frame.w, frame.h) : frame.h;
 
   if (X_S_F == 2 && Y_S_F == 1)
   {
@@ -123,12 +120,13 @@ void Cr2Decompressor::decodeN_X_Y()
   unsigned processedPixels = 0;
   unsigned processedLineSlices = 0;
   for (unsigned sliceWidth : slicesWidths) {
-    for (unsigned y = 0; y < sliceHeight; y += yStepSize) {
+    for (unsigned y = 0; y < frame.h; y += yStepSize) {
       // Fix for Canon 80D mraw format.
       // In that format, `frame` is 4032x3402, while `mRaw` is 4536x3024.
       // Consequently, the slices in `frame` wrap around plus there are few
       // 'extra' sliced lines because sum(slicesW) * sliceH > mRaw->dim.area()
       // Those would overflow, hence the break.
+      // This also fixes the flipped width & height issue with Canon 6D mRaw
       // see FIX_CANON_FRAME_VS_IMAGE_SIZE_MISMATCH
       unsigned destY = processedLineSlices % mRaw->dim.y;
       unsigned destX =
