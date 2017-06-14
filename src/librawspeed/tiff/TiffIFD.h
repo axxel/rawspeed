@@ -54,7 +54,7 @@ class TiffIFD
 
   friend class TiffEntry;
   friend class FiffParser;
-  friend TiffRootIFDOwner parseTiff(const Buffer& data);
+  friend class TiffRootIFD;
 
   // make sure we never copy-constuct/assign a TiffIFD to keep the owning subcontainers contents save
   TiffIFD(const TiffIFD &) = delete;            // NOLINT
@@ -65,10 +65,12 @@ class TiffIFD
   TiffRootIFDOwner parseDngPrivateData(TiffEntry *t);
   TiffRootIFDOwner parseMakerNote(TiffEntry *t);
   void parseIFDEntry(ByteStream& bs);
+  void checkTreeDepthOverflow() const;
+
+  TiffIFD(const ByteStream& data, uint32 offset, TiffIFD* parent);
 
 public:
   TiffIFD() = default;
-  TiffIFD(const DataBuffer& data, uint32 offset, TiffIFD* parent);
   virtual ~TiffIFD() = default;
   uint32 getNextIFD() const {return nextIFD;}
   std::vector<const TiffIFD*> getIFDsWithTag(TiffTag tag) const;
@@ -90,16 +92,26 @@ struct TiffID
   std::string model;
 };
 
-class TiffRootIFD final : public TiffIFD {
+class TiffRootIFD final : public TiffIFD
+{
+  struct VirtualTag {};
+  TiffRootIFD(const DataBuffer& data, VirtualTag)
+    : TiffIFD(), rootBuffer(data) {}
+
 public:
   const DataBuffer rootBuffer;
 
-  TiffRootIFD(const DataBuffer &data, uint32 offset)
-      : TiffIFD(data, offset, nullptr), rootBuffer(data) {}
+  TiffRootIFD(ByteStream bs)
+    : TiffIFD(bs, bs.getPosition(), nullptr), rootBuffer(bs) {}
+
+  TiffRootIFD(const ByteStream& data, uint32 offset)
+    : TiffIFD(data, offset, nullptr), rootBuffer(data) {}
 
   // find the MAKE and MODEL tags identifying the camera
   // note: the returned strings are trimmed automatically
   TiffID getID() const;
+
+  static TiffRootIFDOwner parseIFDChain(ByteStream bs);
 };
 
 inline bool isTiffInNativeByteOrder(const ByteStream& bs, uint32 pos, const char* context = "") {

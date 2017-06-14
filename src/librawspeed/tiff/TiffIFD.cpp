@@ -66,7 +66,7 @@ void TiffIFD::parseIFDEntry(ByteStream& bs) {
     case SUBIFDS:
     case EXIFIFDPOINTER:
       for (uint32 j = 0; j < t->count; j++) {
-        add(make_unique<TiffIFD>(bs, t->getU32(j), this));
+        add(unique_ptr<TiffIFD>(new TiffIFD(bs, t->getU32(j), this)));
         // if (getSubIFDs().back()->getNextIFD() != 0)
         //   cerr << "detected chained subIFds" << endl;
       }
@@ -80,12 +80,18 @@ void TiffIFD::parseIFDEntry(ByteStream& bs) {
   }
 }
 
-TiffIFD::TiffIFD(const DataBuffer& data, uint32 offset, TiffIFD* parent_)
-    : parent(parent_) {
+void TiffIFD::checkTreeDepthOverflow() const
+{
+  const TiffIFD* p = this;
+  for (int i = 1; p; ++i, p = p->parent )
+    if (i > 10)
+      ThrowTPE("TiffIFD cascading overflow.");
+}
 
-  // see parseTiff: UINT32_MAX is used to mark the "virtual" top level TiffRootIFD in a tiff file
-  if (offset == UINT32_MAX)
-    return;
+TiffIFD::TiffIFD(const ByteStream& data, uint32 offset, TiffIFD* parent_)
+    : parent(parent_)
+{
+  checkTreeDepthOverflow();
 
   ByteStream bs = data;
   bs.setPosition(offset);
@@ -238,10 +244,7 @@ TiffEntry* __attribute__((pure)) TiffIFD::getEntryRecursive(TiffTag tag) const {
 }
 
 void TiffIFD::add(TiffIFDOwner subIFD) {
-  TiffIFD* p = this;
-  for (int i = 1; p; ++i, p = p->parent )
-    if (i > 10)
-      ThrowTPE("TiffIFD cascading overflow.");
+  checkTreeDepthOverflow();
   if (subIFDs.size() > 100)
     ThrowTPE("TIFF file has too many SubIFDs, probably broken");
   subIFD->parent = this;
@@ -275,6 +278,17 @@ TiffID TiffRootIFD::getID() const
   id.model = trimSpaces(modelE->getString());
 
   return id;
+}
+
+TiffRootIFDOwner TiffRootIFD::parseIFDChain(ByteStream bs)
+{
+  TiffRootIFDOwner root = unique_ptr<TiffRootIFD>(
+        new TiffRootIFD(bs, TiffRootIFD::VirtualTag()));
+  for( uint32 nextIFD = bs.getU32(); nextIFD;
+       nextIFD = root->getSubIFDs().back()->getNextIFD() ) {
+    root->add(unique_ptr<TiffIFD>(new TiffIFD(bs, nextIFD, root.get())));
+  }
+  return root;
 }
 
 } // namespace RawSpeed
