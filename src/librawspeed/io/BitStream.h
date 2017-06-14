@@ -102,10 +102,15 @@ public:
     assert(nbits <= Cache::MaxGetBits);
     if (cache.fillLevel < nbits) {
 #if BUFFER_PADDING==0
+      // Maximum number of bytes reqired by the different BitStreams
+      // to extract MaxGetBits number of bits (fill the cache).
+      // In case of a corrupted LJPEG stream this is twice the number of bytes
+      // that can be requested at once.
+      constexpr auto MaxRequiredBytes = Cache::MaxGetBits*2/8;
       // disabling this run-time bounds check saves about 1% on intel x86-64
-      if (pos + Cache::MaxGetBits/8 > size) {
+      if (pos + MaxRequiredBytes > size) {
         if (pos < size) {
-          uchar8 tmp[4] = {0, 0, 0, 0};
+          uchar8 tmp[MaxRequiredBytes] = {};
           memcpy(tmp, data + pos, size - pos);
           pos += fillCache(tmp);
         } else if (pos < size + 4) {
