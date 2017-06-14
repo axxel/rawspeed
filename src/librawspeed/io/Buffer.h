@@ -69,6 +69,12 @@ public:
   Buffer& operator=(Buffer&& rhs);
 
   Buffer getSubView(size_type offset, size_type size_) const {
+#ifndef FAIL_SUB_VIEW_OVERFLOW_EARLY
+    // this automatic cropping makes the parsers fail 'late', i.e. when
+    // actually accessing the bytes. This is necessary for the partial file
+    // parsing to work
+    size_ = std::min(size_, size - offset);
+#endif
     return Buffer(getData(offset, size_), size_);
   }
   Buffer getSubView(size_type offset) const {
