@@ -34,7 +34,12 @@ namespace RawSpeed {
 class ByteStream : public DataBuffer
 {
 protected:
-  size_type pos = 0; // position of stream in bytes (this is next byte to deliver)
+  // internal position of stream in bytes relative to the data pointer
+  // (this is next byte to deliver)
+  size_type pos = 0;
+  // position offset to add to internal pos when calculating get/setPosition()
+  // see also rebase() below
+  size_type posBase = 0;
 
 public:
   ByteStream() = default;
@@ -58,7 +63,9 @@ public:
   // return ByteStream that starts at given offset
   // i.e. this->data + offset == getSubStream(offset).data
   ByteStream getSubStream(size_type offset, size_type size_) {
-    return ByteStream(getSubView(offset, size_), 0, isInNativeByteOrder());
+    if (offset < posBase)
+      ThrowIOE("Out of bounds access in ByteStream");
+    return ByteStream(getSubView(offset - posBase, size_), 0, isInNativeByteOrder());
   }
 
   inline void check(size_type bytes) const {
@@ -66,9 +73,11 @@ public:
       ThrowIOE("Out of bounds access in ByteStream");
   }
 
-  inline size_type getPosition() const { return pos; }
+  inline size_type getPosition() const { return pos + posBase; }
   inline void setPosition(size_type newPos) {
-    pos = newPos;
+    if (newPos < posBase)
+      ThrowIOE("Out of bounds access in ByteStream");
+    pos = newPos - posBase;
     check(0);
   }
   inline size_type getRemainSize() const { return size-pos; }
@@ -153,14 +162,16 @@ public:
   // recalculate the internal data/position information such that current position
   // i.e. getData() before == getData() after but getPosition() after == newPosition
   // this is only used for DNGPRIVATEDATA handling to restore the original offset
-  // in case the private data / maker note has been moved within in the file
-  // TODO: could add a lower bound check later if required.
+  // in case the private data / maker note has been moved within in the file.
+  // also used for ARW decryption to make sure the IFD offsets stay valid.
   void rebase(size_type newPosition, size_type newSize) {
-    const uchar8* dataAtNewPosition = getData(newSize);
-    if ((std::ptrdiff_t)newPosition > (std::ptrdiff_t)dataAtNewPosition)
-      ThrowIOE("Out of bounds access in ByteStream");
-    data = dataAtNewPosition - newPosition;
-    size = newPosition + newSize;
+    check(newSize);
+    size = newSize + pos;
+    posBase = newPosition - pos;
+  }
+
+  void rebase(size_type newPosition) {
+    rebase(newPosition, getRemainSize());
   }
 
   // special factory function to set up internal buffer with copy of passed data.
