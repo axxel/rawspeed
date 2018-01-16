@@ -45,7 +45,7 @@ namespace RawSpeed {
 template <typename T>
 class ThreadSafeVector : protected std::vector<T>
 {
-#ifdef NO_PTHREAD
+#ifndef HAVE_PTHREAD
   struct pthread_mutext_t;
 #endif
 

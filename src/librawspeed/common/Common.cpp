@@ -21,10 +21,7 @@
 #include "common/Common.h"
 #include <cstdarg> // for va_end, va_list, va_start
 #include <cstdio>  // for printf, vprintf
-
-#ifndef NO_PTHREAD
 #include <thread>  // for thread::hardware_concurrency
-#endif
 
 namespace RawSpeed {
 
@@ -59,11 +56,11 @@ static uint32 accessThreadCount(uint32 n = 0)
 
 uint32 getThreadCount()
 {
-#ifdef NO_PTHREAD
-  return 1;
-#else
+#ifdef HAVE_PTHREAD
   auto n = accessThreadCount();
   return n ? n : std::max(1u, std::thread::hardware_concurrency());
+#else
+  return 1;
 #endif
 }
 

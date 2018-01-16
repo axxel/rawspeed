@@ -243,7 +243,7 @@ TEST(UnrollLoopTest, Test) {
 TEST(ThreadCountTest, ThreadCountTest) {
   ASSERT_GT(getThreadCount(), 0);
   setThreadCount(1); ASSERT_EQ(getThreadCount(), 1);
-#ifndef NO_PTHREAD
+#ifdef HAVE_PTHREAD
   setThreadCount(2); ASSERT_EQ(getThreadCount(), 2);
 #endif
   setThreadCount(0); ASSERT_GT(getThreadCount(), 0);
