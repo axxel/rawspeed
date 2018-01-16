@@ -1,7 +1,7 @@
 include(CheckCXXCompilerFlagAndEnableIt)
 
 # want -Werror to be enabled automatically for me.
-add_definitions(-Werror)
+#add_definitions(-Werror)
 
 CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wall)
 
@@ -26,9 +26,9 @@ CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wextra)
 
 CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wno-unused-parameter)
 
-CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wsuggest-attribute=noreturn)
-CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wsuggest-attribute=const)
-CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wsuggest-attribute=pure)
+#CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wsuggest-attribute=noreturn)
+#CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wsuggest-attribute=const)
+#CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-Wsuggest-attribute=pure)
 
 if(UNIX OR APPLE)
   # on windows, resuts in bogus false-positive varnings
