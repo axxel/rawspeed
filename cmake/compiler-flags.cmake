@@ -11,8 +11,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 message(STATUS "Checking for -std=c++11 support - works")
 
 # always debug info
-add_definitions(-g3)
-add_definitions(-ggdb3)
+#add_definitions(-g3)
+#add_definitions(-ggdb3)
 
 # should be fixed IMHO
 CHECK_CXX_COMPILER_FLAG_AND_ENABLE_IT(-fno-strict-aliasing)
