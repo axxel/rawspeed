@@ -46,7 +46,7 @@ template <typename T>
 class ThreadSafeVector : protected std::vector<T>
 {
 #ifndef HAVE_PTHREAD
-  struct pthread_mutext_t;
+  struct pthread_mutex_t {};
 #endif
 
   // use a pimpl idiom here to make sure the stack size of this class is the
