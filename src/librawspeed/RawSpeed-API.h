@@ -37,5 +37,8 @@
 #include "metadata/CameraMetaData.h"
 #include "metadata/ColorFilterArray.h"
 #include "parsers/RawParser.h"
+#include "tiff/TiffIFD.h"
+#include "tiff/TiffEntry.h"
+#include "tiff/TiffTag.h"
 
 // IWYU pragma: end_exports
