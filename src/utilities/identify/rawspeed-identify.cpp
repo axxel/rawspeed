@@ -125,11 +125,9 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Loading file: \"%s\"\n", argv[1]);
 
-    FileReader f(argv[1]);
+    auto fileBuffer = readFile(argv[1]);
 
-    std::unique_ptr<FileMap> m(f.readFile());
-
-    RawParser t(m.get());
+    RawParser t(&fileBuffer);
 
     std::unique_ptr<RawDecoder> d(t.getDecoder(meta.get()));
 

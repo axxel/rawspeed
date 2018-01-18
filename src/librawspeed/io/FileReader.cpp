@@ -24,79 +24,28 @@
 #include <cstdio>               // for fclose, fseek, fopen, fread, ftell
 #include <fcntl.h>              // for SEEK_END, SEEK_SET
 
-#if !defined(__unix__) && !defined(__APPLE__)
-#include <io.h>
-#include <tchar.h>
-#include <windows.h>
-#endif // !defined(__unix__) && !defined(__APPLE__)
-
 namespace RawSpeed {
 
-FileReader::FileReader(const char *_filename) : mFilename(_filename) {}
-
-FileMap* FileReader::readFile() {
-#if defined(__unix__) || defined(__APPLE__)
-  int bytes_read = 0;
-  FILE *file;
-  char *dest;
-  long size;
-
-  file = fopen(mFilename, "rb");
-  if (file == nullptr)
+Buffer readFile(const char* fn)
+{
+  std::unique_ptr<FILE, decltype(&fclose)> file(fopen(fn, "rb"), &fclose);
+  if (!file)
     ThrowFIE("Could not open file.");
-  fseek(file, 0, SEEK_END);
-  size = ftell(file);
-  if (size <= 0) {
-    fclose(file);
-    ThrowFIE("File is 0 bytes.");
-  }
-  fseek(file, 0, SEEK_SET);
 
-#if 0
-  // Not used, as it is slower than sync read
+  fseek(file.get(), 0, SEEK_END);
+  long size = ftell(file.get());
+  if (size <= 0)
+    ThrowFIE("File is empty or has unknown size.");
 
-  uchar8* pa = (uchar8*)mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-  FileMap *fileData = new FileMap(pa, size);
+  fseek(file.get(), 0, SEEK_SET);
 
-#else
-  auto *fileData = new FileMap(size);
+  Buffer data(size);
 
-  dest = (char *)fileData->getDataWrt(0, size);
-  bytes_read = fread(dest, 1, size, file);
-  fclose(file);
-  if (size != bytes_read) {
-    delete fileData;
+  size_t bytes_read = fread((char *)data.getDataWrt(0, size), 1, size, file.get());
+  if ((size_t)size != bytes_read)
     ThrowFIE("Could not read file.");
-  }
-#endif
 
-#else // __unix__
-  HANDLE file_h;  // File handle
-  file_h = CreateFile(mFilename, GENERIC_READ, FILE_SHARE_READ, nullptr,
-                      OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
-  if (file_h == INVALID_HANDLE_VALUE) {
-    ThrowFIE("Could not open file.");
-  }
-
-  LARGE_INTEGER f_size;
-  GetFileSizeEx(file_h , &f_size);
-
-  if (!f_size.LowPart)
-    ThrowFIE("File is 0 bytes.");
-
-  FileMap *fileData = new FileMap(f_size.LowPart);
-
-  DWORD bytes_read;
-  if (!ReadFile(file_h, fileData->getDataWrt(0, fileData->getSize()),
-                fileData->getSize(), &bytes_read, nullptr)) {
-    CloseHandle(file_h);
-    delete fileData;
-    ThrowFIE("Could not read file.");
-  }
-  CloseHandle(file_h);
-
-#endif // __unix__
-  return fileData;
+  return data;
 }
 
 } // namespace RawSpeed

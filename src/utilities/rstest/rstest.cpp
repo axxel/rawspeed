@@ -188,16 +188,12 @@ size_t process(const string& filename, const CameraMetaData* metadata,
 #endif
   cout << left << setw(55) << filename << ": starting decoding ... " << endl;
 
-  FileReader reader(filename.c_str());
-
-  unique_ptr<FileMap> map = unique_ptr<FileMap>(reader.readFile());
-  // FileMap* map = readFile( argv[1] );
+  Buffer fileBuffer = readFile( argv[1] );
 
   Timer t;
 
-  RawParser parser(map.get());
-  unique_ptr<RawDecoder> decoder =
-      unique_ptr<RawDecoder>(parser.getDecoder(metadata));
+  RawParser parser(&fileBuffer);
+  unique_ptr<RawDecoder> decoder(parser.getDecoder(metadata));
   // RawDecoder* decoder = parseRaw( map );
 
   decoder->failOnUnknown = false;
@@ -213,7 +209,7 @@ size_t process(const string& filename, const CameraMetaData* metadata,
 #pragma omp critical(io)
 #endif
   cout << left << setw(55) << filename << ": " << internal << setw(3)
-       << map->getSize() / 1000000 << " MB / " << setw(4) << time << " ms"
+       << fileBuffer.getSize() / 1000000 << " MB / " << setw(4) << time << " ms"
        << endl;
 
   if (create) {
