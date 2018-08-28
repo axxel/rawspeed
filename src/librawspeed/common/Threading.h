@@ -59,7 +59,7 @@ class ThreadSafeVector : protected std::vector<T>
 public:
   ThreadSafeVector()
   {
-    mutex = make_unique<pthread_mutex_t>();
+    mutex = std::make_unique<pthread_mutex_t>();
     pthread_mutex_init(mutex.get(), nullptr);
   }
 
