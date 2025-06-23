@@ -146,7 +146,7 @@ void AbstractLJpegDecompressor::parseDHT() {
     if (huff[htIndex] != nullptr)
       ThrowRDE("Duplicate table definition");
 
-    auto ht = make_unique<HuffmanTable>();
+    auto ht = std::make_unique<HuffmanTable>();
 
     // copy 16 bytes from input stream to number of codes per length table
     uint32 nCodes = ht->setNCodesPerLength(input.getBuffer(16));
