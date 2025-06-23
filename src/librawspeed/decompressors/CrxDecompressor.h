@@ -1,7 +1,7 @@
 /*
     RawSpeed - RAW file decoder.
 
-    Copyright (C) 2009-2014 Klaus Post
+    Copyright (C) 2021 Daniel Vogelbacher
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -20,21 +20,32 @@
 
 #pragma once
 
-#include "io/FileMap.h" // for FileMap
+#include "common/RawImage.h"                    // for RawImage
+#include "tiff/TiffEntry.h"
+#include "decoders/RawDecoderException.h"       // for ThrowRDE
+#include <cassert>                              // for assert
+#include <cstdint>                              // for uint16_t
 
 namespace RawSpeed {
 
-class CameraMetaData;
+class Buffer;
+class RawImage;
+class IsoMCanonCmp1Box;
 
-class RawDecoder;
+class CrxDecompressor final {
+  RawImage mRaw;
 
-class RawParser {
 public:
-  RawParser(FileMap* inputData) : mInput(inputData) {}
-  virtual RawDecoder* getDecoder(const CameraMetaData* meta = nullptr);
+  CrxDecompressor(const RawImage& img);
 
-protected:
-  FileMap *mInput;
+  void decode(const IsoMCanonCmp1Box& cmp1Box, Buffer& crxRawData);
+
+private:
+  int crxDecodePlane(void* p, uint32_t planeNumber);
+  void crxLoadDecodeLoop(void* img, int nPlanes);
+  int crxParseImageHeader(uint8_t* cmp1TagData, int nTrack);
+  void crxConvertPlaneLineDf(void* p, int imageRow);
+  void crxLoadFinalizeLoopE3(void* p, int planeHeight);
 };
 
 } // namespace RawSpeed

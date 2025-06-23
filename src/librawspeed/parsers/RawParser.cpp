@@ -30,6 +30,8 @@
 #include "parsers/CiffParserException.h"  // for CiffParserException
 #include "parsers/FiffParser.h"           // for FiffParser
 #include "parsers/FiffParserException.h"  // for FiffParserException
+#include "parsers/IsoMParser.h"           // for IsoMParser
+#include "parsers/IsoMParserException.h"  // for IsoMParserException
 #include "parsers/TiffParser.h"           // for makeDecoder, parseTiff
 #include "parsers/TiffParserException.h"  // for TiffParserException
 #include "parsers/X3fParser.h"            // for X3fParser
@@ -91,6 +93,12 @@ RawDecoder* RawParser::getDecoder(const CameraMetaData* meta) {
     p.parseData();
     return p.getDecoder();
   } catch (CiffParserException &) {
+  }
+
+  try {
+    IsoMParser p(mInput);
+    return p.getDecoder(meta);
+  } catch (IsoMParserException&) {
   }
 
   // Detect camera on filesize (CHDK).

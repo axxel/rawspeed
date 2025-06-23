@@ -9,6 +9,8 @@ FILE(GLOB TIFF_SOURCES
   "CiffIFD.cpp"
   "CiffIFD.h"
   "CiffTag.h"
-)
+  "IsoMBox.cpp"
+  "IsoMBox.h"
+  )
 
 set(RAWSPEED_SOURCES "${RAWSPEED_SOURCES};${TIFF_SOURCES}" PARENT_SCOPE)

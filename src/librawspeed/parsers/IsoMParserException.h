@@ -1,7 +1,7 @@
 /*
     RawSpeed - RAW file decoder.
 
-    Copyright (C) 2009-2014 Klaus Post
+    Copyright (C) 2018 Roman Lebedev
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -20,21 +20,20 @@
 
 #pragma once
 
-#include "io/FileMap.h" // for FileMap
+#include "common/RawspeedException.h"   // for ThrowExceptionHelper
+//#include "parsers/RawParserException.h" // for ThrowRPE, RawParserException
+#include <string>
 
 namespace RawSpeed {
 
-class CameraMetaData;
-
-class RawDecoder;
-
-class RawParser {
+class IsoMParserException final : public RawspeedException {
 public:
-  RawParser(FileMap* inputData) : mInput(inputData) {}
-  virtual RawDecoder* getDecoder(const CameraMetaData* meta = nullptr);
-
-protected:
-  FileMap *mInput;
+  explicit IsoMParserException(const std::string& msg)
+      : RawspeedException(msg.c_str()) {}
+  explicit IsoMParserException(const char* msg) : RawspeedException(msg) {}
 };
+
+#define ThrowIPE(...)                                                          \
+  ThrowExceptionHelper(RawSpeed::IsoMParserException, __VA_ARGS__)
 
 } // namespace RawSpeed

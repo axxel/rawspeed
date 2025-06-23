@@ -1,7 +1,8 @@
 /*
     RawSpeed - RAW file decoder.
 
-    Copyright (C) 2009-2014 Klaus Post
+    Copyright (C) 2018 Roman Lebedev
+    Copyright (C) 2021 Daniel Vogelbacher
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -20,21 +21,28 @@
 
 #pragma once
 
-#include "io/FileMap.h" // for FileMap
+#include "parsers/RawParser.h" // for RawParser
+#include "tiff/IsoMBox.h"      // for IsoMRootBox
+#include <memory>              // for unique_ptr
 
 namespace RawSpeed {
 
-class CameraMetaData;
+class Buffer;
 
 class RawDecoder;
 
-class RawParser {
-public:
-  RawParser(FileMap* inputData) : mInput(inputData) {}
-  virtual RawDecoder* getDecoder(const CameraMetaData* meta = nullptr);
+class CameraMetaData;
 
-protected:
-  FileMap *mInput;
+class IsoMParser final : public RawParser {
+  std::unique_ptr<const IsoMRootBox> rootBox;
+
+  void parseData();
+
+public:
+  explicit IsoMParser(FileMap* input);
+
+  //  std::unique_ptr<RawDecoder>
+  RawDecoder* getDecoder(const CameraMetaData* meta = nullptr) override;
 };
 
 } // namespace RawSpeed

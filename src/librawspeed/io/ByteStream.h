@@ -103,6 +103,11 @@ public:
     check(0);
   }
 
+  ByteStream getStream(size_type size_) {
+    ByteStream ret = getSubStream(pos, size_);
+    skipBytes(size_);
+    return ret;
+  }
   inline bool hasPatternAt(const char *pattern, size_type size_,
                            size_type relPos) const {
     if (!isValid(pos + relPos, size_))
@@ -136,6 +141,7 @@ public:
     return ret;
   }
 
+  inline short16 getI16() { return get<short16>(); }
   inline ushort16 getU16() { return get<ushort16>(); }
   inline int32 getI32() { return get<int32>(); }
   inline uint32 getU32() { return get<uint32>(); }
