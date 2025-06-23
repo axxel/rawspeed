@@ -188,7 +188,7 @@ size_t process(const string& filename, const CameraMetaData* metadata,
 #endif
   cout << left << setw(55) << filename << ": starting decoding ... " << endl;
 
-  Buffer fileBuffer = readFile( argv[1] );
+  Buffer fileBuffer = readFile( filename.c_str() );
 
   Timer t;
 
