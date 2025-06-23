@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
       uchar8 *const data = r->getDataUncropped(0, 0);
 
 #ifdef _OPENMP
-#pragma omp parallel for default(none) schedule(static) reduction(+ : sum)
+#pragma omp parallel for default(shared) schedule(static) reduction(+ : sum)
 #endif
       for (size_t k = 0; k < ((size_t)dimUncropped.y * dimUncropped.x * bpp);
            k++) {
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
       auto *const data = (float *)r->getDataUncropped(0, 0);
 
 #ifdef _OPENMP
-#pragma omp parallel for default(none) schedule(static) reduction(+ : sum)
+#pragma omp parallel for default(shared) schedule(static) reduction(+ : sum)
 #endif
       for (size_t k = 0; k < ((size_t)dimUncropped.y * dimUncropped.x); k++) {
         sum += (double)data[k];
@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
       auto *const data = (uint16_t *)r->getDataUncropped(0, 0);
 
 #ifdef _OPENMP
-#pragma omp parallel for default(none) schedule(static) reduction(+ : sum)
+#pragma omp parallel for default(shared) schedule(static) reduction(+ : sum)
 #endif
       for (size_t k = 0; k < ((size_t)dimUncropped.y * dimUncropped.x); k++) {
         sum += (double)data[k];
