@@ -202,7 +202,8 @@ size_t process(const string& filename, const CameraMetaData* metadata,
   decoder->decodeRaw();
   decoder->decodeMetaData(metadata);
   RawImage raw = decoder->mRaw;
-  // RawImage raw = decoder->decode();
+  raw->calculateBlackAreas();
+// RawImage raw = decoder->decode();
 
   auto time = t();
 #ifdef _OPENMP
