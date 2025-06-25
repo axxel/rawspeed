@@ -580,7 +580,7 @@ bool Cr3Decoder::isCodecSupported(const std::string& compressorVersion) const {
 
   return compressorVersion == "CanonCR3_001/00.11.00/00.00.00" // R8
          || compressorVersion ==
-                "CanonCR3_001/00.10.00/00.00.00" // EOS R5, R6 and 1DX Mark III
+                "CanonCR3_001/00.10.00/00.00.00" // EOS R5, R5m2, R6 and 1DX Mark III
                                                  // (raw)
          || compressorVersion ==
                 "CanonCR3_003/00.10.00/00.00.00" // R6 (craw with HDR preview),
