@@ -28,7 +28,8 @@ namespace RawSpeed {
 
 Buffer readFile(const char* fn)
 {
-  std::unique_ptr<FILE, decltype(&fclose)> file(fopen(fn, "rb"), &fclose);
+  auto fcloser = [](FILE* f){ fclose(f); };
+  auto file = std::unique_ptr<FILE, decltype(fcloser)>{fopen(fn, "rb"), fcloser};
   if (!file)
     ThrowFIE("Could not open file.");
 
