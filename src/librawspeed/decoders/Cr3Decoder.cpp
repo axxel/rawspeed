@@ -604,7 +604,7 @@ void Cr3Decoder::checkSupportInternal(const CameraMetaData* meta) {
 
   // Check compressor version string
   auto compressorVersion = canonBox->CNCV()->compressorVersion;
-  writeLog(DEBUG_PRIO_ERROR, "Compressor Version: %s",
+  writeLog(DEBUG_PRIO_EXTRA, "Compressor Version: %s",
            compressorVersion.c_str());
   if (!isCodecSupported(compressorVersion)) {
     ThrowRDE("CR3 compressor version (CNCV: %s) is not supported",
